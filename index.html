@@ -1,151 +1,113 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Botões com Contador</title>
-
-    <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: Arial, Helvetica, sans-serif;
-            background-color: #f4f4f4;
-        }
-
-        .container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 15px;
-            max-width: 1200px;
-            margin: auto;
-        }
-
-        .botao {
-            background-color: #ffffff;
-            color: #000;
-            aspect-ratio: 1 / 1;
-            border-radius: 8px;
-            border: 2px solid #ccc;
-            cursor: pointer;
-
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-
-            font-size: 20px;
-            font-weight: bold;
-        }
-
-        .botao.ativo {
-            background-color: #4CAF50;
-            color: #fff;
-        }
-
-        .botao.alerta {
-            background-color: #e53935;
-            color: #fff;
-            animation: piscar 1s infinite;
-        }
-
-        .tempo {
-            font-size: 14px;
-            margin-top: 5px;
-            font-weight: normal;
-        }
-
-        @keyframes piscar {
-            0%   { opacity: 1; }
-            50%  { opacity: 0.3; }
-            100% { opacity: 1; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Botões Sincronizados</title>
+<style>
+    body { font-family: Arial; margin: 20px; background: #f4f4f4; }
+    .container { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 15px; max-width: 1200px; margin: auto; }
+    .botao { background: #fff; color: #000; aspect-ratio: 1 / 1; border-radius: 8px; border: 2px solid #ccc; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; }
+    .botao.ativo { background: #4CAF50; color: #fff; }
+    .botao.alerta { background: #e53935; color: #fff; animation: piscar 1s infinite; }
+    .tempo { font-size: 14px; margin-top: 5px; font-weight: normal; }
+    @keyframes piscar { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+</style>
 </head>
 <body>
 
 <div class="container" id="container"></div>
 
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
 <script>
-    const container = document.getElementById("container");
-    const LIMITE_TEMPO = 30; // 2 minutos (teste)
+  // 🔹 Configuração do seu Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyDIuVvomdUvzxhzbQXwMytL6yT7A3tN4-8",
+    authDomain: "samon-55478.firebaseapp.com",
+    databaseURL: "https://samon-55478-default-rtdb.firebaseio.com",
+    projectId: "samon-55478",
+    storageBucket: "samon-55478.appspot.com",
+    messagingSenderId: "837787210558",
+    appId: "1:837787210558:web:c25006b9cacf96a877926f",
+    measurementId: "G-P6WZEPLCQZ"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-    // 🔊 Função para tocar um bip curto
-    function tocarBip() {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
+  const container = document.getElementById("container");
+  const LIMITE_TEMPO = 120; // 2 minutos para teste
 
-        oscillator.type = "sine";
-        oscillator.frequency.value = 1000; // Hz
-        gainNode.gain.value = 0.1;
+  function tocarBip() {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.value = 1000;
+    gainNode.gain.value = 0.1;
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.2);
+  }
 
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
+  for(let i=1; i<=24; i++){
+    const button = document.createElement("button");
+    button.className = "botao";
+    button.innerHTML = `<div>${i}</div><div class="tempo">00:00</div>`;
+    container.appendChild(button);
 
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + 0.2); // 200ms
-    }
+    const ref = db.ref('botoes/'+i);
+    ref.once('value', snap => {
+      if(!snap.exists()) ref.set({segundos:0, estado:'inativo'});
+    });
 
-    for (let i = 1; i <= 24; i++) {
-        const button = document.createElement("button");
-        button.className = "botao";
-        button.innerHTML = `
-            <div>${i}</div>
-            <div class="tempo">00:00</div>
-        `;
+    let bipInterval = null;
 
-        let segundos = 0;
-        let interval = null;
-        let bipInterval = null;
+    ref.on('value', snap=>{
+      const data = snap.val();
+      button.querySelector('.tempo').textContent = String(Math.floor(data.segundos/60)).padStart(2,'0') + ':' + String(data.segundos%60).padStart(2,'0');
+      button.classList.remove('ativo','alerta');
 
-        button.addEventListener("click", () => {
+      if(data.estado==='ativo') button.classList.add('ativo');
+      if(data.estado==='alerta'){
+        button.classList.add('alerta');
+        tocarBip();
+        if(!bipInterval) bipInterval = setInterval(tocarBip,2000);
+      } else if(bipInterval){
+        clearInterval(bipInterval);
+        bipInterval = null;
+      }
+    });
 
-            // 🔁 Se estiver ativo, perguntar se deseja zerar
-            if (interval !== null) {
-                const confirmar = confirm("Deseja zerar o tempo deste botão?");
+    button.addEventListener('click', ()=>{
+      ref.once('value').then(snap=>{
+        const data = snap.val();
 
-                if (confirmar) {
-                    clearInterval(interval);
-                    clearInterval(bipInterval);
+        if(data.estado==='ativo'){ 
+          if(confirm('Deseja zerar o tempo deste botão?')){
+            ref.set({segundos:0, estado:'inativo'});
+          }
+          return;
+        }
+        if(data.estado==='alerta') return;
+        ref.set({segundos: data.segundos, estado:'ativo'});
 
-                    interval = null;
-                    bipInterval = null;
-                    segundos = 0;
-
-                    button.classList.remove("ativo", "alerta");
-                    button.querySelector(".tempo").textContent = "00:00";
-                }
-
-                return;
-            }
-
-            // ▶️ Iniciar contador
-            button.classList.add("ativo");
-
-            interval = setInterval(() => {
-                segundos++;
-
-                const min = String(Math.floor(segundos / 60)).padStart(2, "0");
-                const sec = String(segundos % 60).padStart(2, "0");
-
-                button.querySelector(".tempo").textContent = `${min}:${sec}`;
-
-                // ⏰ Tempo limite atingido
-                if (segundos === LIMITE_TEMPO) {
-                    button.classList.remove("ativo");
-                    button.classList.add("alerta");
-
-                    // 🔊 Bip intermitente a cada 2 segundos
-                    tocarBip();
-                    bipInterval = setInterval(tocarBip, 2000);
-                }
-            }, 1000);
-        });
-
-        container.appendChild(button);
-    }
+        const interval = setInterval(()=>{
+          ref.once('value').then(snap2=>{
+            let segundos = snap2.val().segundos + 1;
+            let estado = segundos>=LIMITE_TEMPO?'alerta':'ativo';
+            ref.set({segundos, estado});
+            if(estado==='alerta') clearInterval(interval);
+          });
+        },1000);
+      });
+    });
+  }
 </script>
 
 </body>
 </html>
+
