@@ -101,7 +101,7 @@ for (let i = 1; i <= 24; i++) {
         let segundos = Math.floor((Date.now() - inicio) / 1000);
 
         if (segundos >= LIMITE_TEMPO) {
-            segundos = LIMITE_TEMPO;
+            // Inicia alerta e bip apenas uma vez
             if (!button.classList.contains("alerta")) {
                 button.classList.remove("ativo");
                 button.classList.add("alerta");
@@ -111,6 +111,10 @@ for (let i = 1; i <= 24; i++) {
         } else {
             button.classList.add("ativo");
             button.classList.remove("alerta");
+            if (bipInterval) {
+                clearInterval(bipInterval);
+                bipInterval = null;
+            }
         }
 
         const min = String(Math.floor(segundos / 60)).padStart(2, "0");
