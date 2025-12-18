@@ -15,7 +15,7 @@
 
         .container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
             gap: 15px;
             max-width: 1200px;
             margin: auto;
@@ -24,9 +24,9 @@
         .botao {
             background-color: #ffffff;
             color: #000;
-            aspect-ratio: 2 / 1; /* retangular: largura 2x a altura */
-            border-radius: 8px;
-            border: 2px solid #ccc;
+            aspect-ratio: 2 / 1;
+            border-radius: 4px;
+            border: 4px solid #ccc;
             cursor: pointer;
 
             display: flex;
@@ -34,9 +34,8 @@
             align-items: center;
             justify-content: center;
 
-            font-size: 20px;
+            font-size: 40px;
             font-weight: bold;
-            transition: background-color 0.3s, color 0.3s;
         }
 
         .botao.ativo {
@@ -51,7 +50,7 @@
         }
 
         .tempo {
-            font-size: 14px;
+            font-size: 16px;
             margin-top: 5px;
             font-weight: normal;
         }
@@ -64,6 +63,8 @@
     </style>
 </head>
 <body>
+
+<div class="container" id="container"></div>
 
 <div class="container" id="container"></div>
 
