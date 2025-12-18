@@ -24,8 +24,8 @@
         .botao {
             background-color: #ffffff;
             color: #000;
-            aspect-ratio: 1 / 1;
-            border-radius: 8px;
+            aspect-ratio: 2 / 1;
+            border-radius: 4px;
             border: 2px solid #ccc;
             cursor: pointer;
 
@@ -34,7 +34,7 @@
             align-items: center;
             justify-content: center;
 
-            font-size: 20px;
+            font-size: 40px;
             font-weight: bold;
         }
 
@@ -50,7 +50,7 @@
         }
 
         .tempo {
-            font-size: 14px;
+            font-size: 16px;
             margin-top: 5px;
             font-weight: normal;
         }
@@ -68,7 +68,7 @@
 
 <script>
     const container = document.getElementById("container");
-    const LIMITE_TEMPO = 1200; // 2 minutos (teste)
+    const LIMITE_TEMPO = 30; // 2 minutos (teste)
 
     // 🔊 Função para tocar um bip curto
     function tocarBip() {
