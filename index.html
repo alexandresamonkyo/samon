@@ -15,7 +15,7 @@
 
         .container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 15px;
             max-width: 1200px;
             margin: auto;
@@ -24,9 +24,9 @@
         .botao {
             background-color: #ffffff;
             color: #000;
-            aspect-ratio: 2 / 1;
-            border-radius: 4px;
-            border: 3px solid #ccc;
+            aspect-ratio: 2 / 1; /* retangular: largura 2x a altura */
+            border-radius: 8px;
+            border: 2px solid #ccc;
             cursor: pointer;
 
             display: flex;
@@ -34,8 +34,9 @@
             align-items: center;
             justify-content: center;
 
-            font-size: 40px;
+            font-size: 20px;
             font-weight: bold;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         .botao.ativo {
@@ -50,7 +51,7 @@
         }
 
         .tempo {
-            font-size: 16px;
+            font-size: 14px;
             margin-top: 5px;
             font-weight: normal;
         }
@@ -68,23 +69,22 @@
 
 <script>
     const container = document.getElementById("container");
-    const LIMITE_TEMPO = 1200; // 2 minutos (teste)
+    const LIMITE_TEMPO = 30; // 30 segundos para teste
 
-    // 🔊 Função para tocar um bip curto
     function tocarBip() {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const oscillator = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
 
         oscillator.type = "sine";
-        oscillator.frequency.value = 1000; // Hz
+        oscillator.frequency.value = 1000;
         gainNode.gain.value = 0.1;
 
         oscillator.connect(gainNode);
         gainNode.connect(audioCtx.destination);
 
         oscillator.start();
-        oscillator.stop(audioCtx.currentTime + 0.2); // 200ms
+        oscillator.stop(audioCtx.currentTime + 0.2);
     }
 
     for (let i = 1; i <= 24; i++) {
@@ -98,13 +98,12 @@
         let segundos = 0;
         let interval = null;
         let bipInterval = null;
+        let inicio = null;
 
         button.addEventListener("click", () => {
 
-            // 🔁 Se estiver ativo, perguntar se deseja zerar
             if (interval !== null) {
                 const confirmar = confirm("Deseja zerar o tempo deste botão?");
-
                 if (confirmar) {
                     clearInterval(interval);
                     clearInterval(bipInterval);
@@ -112,35 +111,35 @@
                     interval = null;
                     bipInterval = null;
                     segundos = 0;
+                    inicio = null;
 
                     button.classList.remove("ativo", "alerta");
                     button.querySelector(".tempo").textContent = "00:00";
                 }
-
                 return;
             }
 
-            // ▶️ Iniciar contador
             button.classList.add("ativo");
+            inicio = Date.now() - segundos * 1000;
 
             interval = setInterval(() => {
-                segundos++;
+                segundos = Math.floor((Date.now() - inicio) / 1000);
 
                 const min = String(Math.floor(segundos / 60)).padStart(2, "0");
                 const sec = String(segundos % 60).padStart(2, "0");
 
                 button.querySelector(".tempo").textContent = `${min}:${sec}`;
 
-                // ⏰ Tempo limite atingido
-                if (segundos === LIMITE_TEMPO) {
+                if (segundos >= LIMITE_TEMPO) {
                     button.classList.remove("ativo");
                     button.classList.add("alerta");
 
-                    // 🔊 Bip intermitente a cada 2 segundos
                     tocarBip();
                     bipInterval = setInterval(tocarBip, 2000);
+
+                    clearInterval(interval);
                 }
-            }, 1000);
+            }, 500);
         });
 
         container.appendChild(button);
